@@ -9,10 +9,10 @@ bool TEST= true;
 //SEG pins- common ANODE leg
 
 // number ofleds attached to 8 x 8 driver
-int NUM_LEDS = 7;
+int NUM_LEDS = 8;
 
 // number of seg pins used- this is hooked up to the commo
-int NUM_MAX_SEG = 6;
+int NUM_MAX_SEG = 8;
 
 //colors list
 //primary...
@@ -34,13 +34,26 @@ byte LIST[]= {RED, YELLOW, GREEN, CYAN, BLUE, MAGENTA, WHITE, RED};
 struct SequenceItem {
   int ornamentId;
   byte color;
+
+  SequenceItem() {
+	  ornamentId = -1;
+	  color = 0;
+  }
+
+  SequenceItem(int ornamentId, byte color) : ornamentId(ornamentId), color(color) { }
 };
 
-#define SEQUENCE_STATE_MAX 4
+#define SEQUENCE_STATE_MAX 16
+#define SEQUENCE_COUNT 2
 
-SequenceItem Sequences[2][4] = {
-  { { 0, RED }, { 1, YELLOW}, { 2, GREEN }, { 3, RED } },
-  { { 0, BLUE }, { 1, WHITE }, { 2, MAGENTA }, { 3, RED} }
+SequenceItem Sequences[SEQUENCE_COUNT][SEQUENCE_STATE_MAX] = {
+  {
+	{ 0, RED }, { 1, YELLOW}, { 2, GREEN }, { 3, RED }, { 4, MAGENTA }, { 5, CYAN }, { 6, WHITE },
+	{ 7, RED }, { 8, YELLOW }, { 9, GREEN }, { 10, RED }, { 9, MAGENTA }, { 1, CYAN }, { 0, WHITE }
+  },
+  { 
+	{ 0, BLUE }, { 1, BLUE }, { 2, BLUE }, { 3, BLUE }, { 4, BLUE }, { 5, BLUE }, { 6, BLUE }, { 7, BLUE }
+  }
 };
 
 //pin configuration
@@ -60,7 +73,7 @@ LedControl lc = LedControl(dataIn, clock, load, numMaxim7219);
 void setColorWithFade(int ornament, byte color, bool isFade){
   //RGB_0 = [0, 1, 2]; RGB_1 = [3, 4, 5]
   int whichRGB = ornament/NUM_MAX_SEG;
-  int whichDIG = ornament % (NUM_LEDS-1);  
+  int whichDIG = ornament % (NUM_LEDS);  
   
   if(isFade){
     for(int intensity =0 ; intensity <16; intensity++){
@@ -138,15 +151,17 @@ void sequence(unsigned long currentTime){
 
   auto sequenceItem = Sequences[sequenceNumber][sequenceState];
 
-  setColorWithFade(sequenceItem.ornamentId, sequenceItem.color, false);
+  if (sequenceItem.ornamentId > -1) {
+	  setColorWithFade(sequenceItem.ornamentId, sequenceItem.color, false);
 
-  if (currentTime > lastColorSwitchTime + DELAY) {
-    lastColorSwitchTime = currentTime;
-    sequenceState++;
-  }
+	  if (currentTime > lastColorSwitchTime + DELAY) {
+		  lastColorSwitchTime = currentTime;
+		  sequenceState++;
+	  }
 
-  if (sequenceState == 3) {
-    sequenceState = 0;
+	  if (sequenceState == SEQUENCE_STATE_MAX) {
+		  sequenceState = 0;
+	  }
   }
   
 //  for(int color = 0; (color< 7 && sequenceActivated); color++){
